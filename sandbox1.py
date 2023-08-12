@@ -1,7 +1,7 @@
 import numpy as np
 
-a = np.array([1, 2, 3])
-b = np.array([1, 2, 3])
+a = np.ones((3, 3), dtype=bool)
 
+print(a)
 
 

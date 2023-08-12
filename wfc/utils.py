@@ -1,12 +1,12 @@
 import numpy as np
-from enum import Enum
+from enum import IntEnum
 
 
-class Direction(Enum):
+class Direction(IntEnum):
 
     TOP = 0
     RIGHT = 1
-    DOWN = 2
+    BOTTOM = 2
     LEFT = 3
 
 
@@ -25,5 +25,5 @@ class Tile:
                                   other.tile[:tile_shape - self.pixel_size, :, :])
 
         # else check right adjacency
-        return np.array_equal(self.tile[:, self.pixel_size:, :],
-                              other.tile[:, :tile_shape - self.pixel_size, :])
+        return np.array_equal(self.tile[:, :tile_shape - self.pixel_size, :],
+                              other.tile[:, self.pixel_size:, :])
