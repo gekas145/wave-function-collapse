@@ -1,7 +1,5 @@
 import numpy as np
+import time
+a = np.random.randint(0, 100, 100**2)
 
-a = np.ones((3, 3), dtype=bool)
-
-print(a)
-
-
+print(np.random.choice(a, size=1))
