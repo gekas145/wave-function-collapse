@@ -38,13 +38,14 @@ class Tile:
 
 class GridCell:
 
-    def __init__(self, tiles, adjacency_rules):
+    def __init__(self, tiles, adjacency_rules, id):
         self.possible_tiles = list(range(len(tiles)))
         self.tiles = tiles
         self.adjacency_rules = adjacency_rules
+        self.id = id
         self.entropy = 0
 
-        self.update_entropy()
+        self._update_entropy()
 
     def _update_entropy(self):
         W = np.array([self.tiles[t].count for t in self.possible_tiles])
