@@ -1,5 +1,6 @@
 import numpy as np
 from wfc.utils import GridCell, GridCellUpdate, Direction
+from collections import deque
 import matplotlib.pyplot as plt
 
 class Generator:
@@ -12,20 +13,35 @@ class Generator:
         self.grid = [GridCell(tiles, adjacency_rules, i) for i in range(self.width*self.height)]
 
         self.start_over = False
+        self.updates = deque()
+        self.direction2step = {Direction.TOP: -self.width,
+                               Direction.BOTTOM: self.width,
+                               Direction.RIGHT: 1,
+                               Direction.LEFT: -1}
 
 
 
     def generate(self):
+        count = 0
         while True:
+            count += 1
+            print(f"{count}/{len(self.grid)}")
             chosen_cell = self._choose_cell()
             if chosen_cell is None:
                 break
 
             self._collapse(chosen_cell)
-            self._propagate(None, None, chosen_cell.id)
+            self.updates.append((None, chosen_cell.id))
 
+            while self.updates:
+                update = self.updates.popleft()
+                self._propagate(*update)
+
+                if self.start_over:
+                    break
+            
             if self.start_over:
-                break
+                    break
         
         if not self.start_over:
             return self._prepare_image()
@@ -33,12 +49,14 @@ class Generator:
 
 
 
-    def _propagate(self, left_tiles, direction, cell_id):
+    def _propagate(self, direction, cell_id):
         if (np.isinf(self.grid[cell_id].entropy) and direction is not None) or self.start_over:
             return
         
         if direction is not None:
-            state = self.grid[cell_id].check(left_tiles, direction)
+            mod_cell_id = cell_id - self.direction2step[direction]
+            state = self.grid[cell_id].check(self.grid[mod_cell_id].possible_tiles, 
+                                             direction)
         else:
             state = GridCellUpdate.CHANGED
 
@@ -50,24 +68,20 @@ class Generator:
             return
         
         if cell_id - self.width >= 0 and direction != Direction.BOTTOM:
-            self._propagate(self.grid[cell_id].possible_tiles,
-                            Direction.TOP, 
-                            cell_id - self.width)
+            self.updates.append((Direction.TOP, 
+                                 cell_id + self.direction2step[Direction.TOP]))
 
         if cell_id + self.width < len(self.grid) and direction != Direction.TOP:
-            self._propagate(self.grid[cell_id].possible_tiles, 
-                            Direction.BOTTOM, 
-                            cell_id + self.width)
+            self.updates.append((Direction.BOTTOM, 
+                                 cell_id + self.direction2step[Direction.BOTTOM]))
 
         if cell_id % self.width != 0 and direction != Direction.RIGHT:
-            self._propagate(self.grid[cell_id].possible_tiles, 
-                            Direction.LEFT, 
-                            cell_id - 1)
+            self.updates.append((Direction.LEFT, 
+                                 cell_id + self.direction2step[Direction.LEFT]))
 
         if (cell_id + 1) % self.width != 0 and direction != Direction.LEFT:
-            self._propagate(self.grid[cell_id].possible_tiles, 
-                            Direction.RIGHT, 
-                            cell_id + 1)
+            self.updates.append((Direction.RIGHT, 
+                                 cell_id + self.direction2step[Direction.RIGHT]))
 
         
 
@@ -93,12 +107,12 @@ class Generator:
         tiles = self.grid[0].tiles
 
         for t in range(len(self.grid)):
-            i = t // self.height
+            i = t // self.width
             j = t % self.width
 
             sub_tile = tiles[self.grid[t].possible_tiles[0]].tile[:self.pixel_size, 
                                                                   (self.window_size - 1)*self.pixel_size:, 
-                                                                  :]
+                                                                  :]          
 
             im[i*self.pixel_size:(i+1)*self.pixel_size, 
                j*self.pixel_size:(j+1)*self.pixel_size, 
