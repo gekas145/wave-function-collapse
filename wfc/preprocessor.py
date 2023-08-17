@@ -39,14 +39,19 @@ class Preprocessor:
     
     def _preprocess_adjacency_rules(self):
         
-        self.adjacency_rules = [np.ones((len(self.tiles), len(self.tiles)), dtype=bool),
-                                np.ones((len(self.tiles), len(self.tiles)), dtype=bool)]
+        self.adjacency_rules = {direction: [[] for i in range(len(self.tiles))] for direction in Direction}
 
         for i in range(len(self.tiles)):
             for j in range(len(self.tiles)):
-                for direction in [Direction.TOP, Direction.RIGHT]:
-                    self.adjacency_rules[direction][i, j] = self.tiles[i].is_compatible(self.tiles[j], 
-                                                                                        direction)
+                if self.tiles[i].is_compatible(self.tiles[j], Direction.TOP):
+                    self.adjacency_rules[Direction.TOP][i].append(j)
+                    self.adjacency_rules[Direction.BOTTOM][j].append(i)
+                
+                if self.tiles[i].is_compatible(self.tiles[j], Direction.RIGHT):
+                    self.adjacency_rules[Direction.RIGHT][i].append(j)
+                    self.adjacency_rules[Direction.LEFT][j].append(i)
+
+                
     
     def _augment(self, tile):
         tile_ref_hor = np.copy(tile[::-1, :, :])
