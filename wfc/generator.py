@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from wfc.utils import GridCell, GridCellUpdate, Direction
 from collections import deque
@@ -10,14 +11,26 @@ class Generator:
         self.height = output_dim[0]
         self.pixel_size = pixel_size
         self.window_size = window_size
-        self.grid = [GridCell(tiles, adjacency_rules, i) for i in range(self.width*self.height)]
+        self.tiles = tiles
+        self.adjacency_rules = adjacency_rules
+        self.grid = [0] * (self.width*self.height)
+
+        possible_tiles = {i: [len(adjacency_rules[Direction.BOTTOM][i]),
+                              len(adjacency_rules[Direction.LEFT][i]),
+                              len(adjacency_rules[Direction.TOP][i]),
+                              len(adjacency_rules[Direction.RIGHT][i])]\
+                            for i in range(len(tiles))}
+
+        for i in range(self.width*self.height):
+            self.grid[i] = GridCell(copy.deepcopy(possible_tiles), i)
+            self._update_entropy(self.grid[i])
 
         self.start_over = False
         self.updates = deque()
-        self.direction2step = {Direction.TOP: -self.width,
-                               Direction.BOTTOM: self.width,
-                               Direction.RIGHT: 1,
-                               Direction.LEFT: -1}
+        self.direction2step = {Direction.BOTTOM: -self.width,
+                               Direction.TOP: self.width,
+                               Direction.LEFT: 1,
+                               Direction.RIGHT: -1}
 
 
 
@@ -31,7 +44,6 @@ class Generator:
                 break
 
             self._collapse(chosen_cell)
-            self.updates.append((None, chosen_cell.id))
 
             while self.updates:
                 update = self.updates.popleft()
@@ -49,70 +61,85 @@ class Generator:
 
 
 
-    def _propagate(self, direction, cell_id):
-        if (np.isinf(self.grid[cell_id].entropy) and direction is not None) or self.start_over:
+    def _propagate(self, cell_id, tile_id):
+        if self.start_over:
             return
         
-        if direction is not None:
-            mod_cell_id = cell_id - self.direction2step[direction]
-            state = self.grid[cell_id].check(self.grid[mod_cell_id].possible_tiles, 
-                                             direction)
-        else:
-            state = GridCellUpdate.CHANGED
+        for direction in Direction:
+            if not self._has_neighbour(cell_id, direction):
+                continue
 
-        if state == GridCellUpdate.UNCHANGED:
-            return
+            adjacent_tiles = self.adjacency_rules[direction][tile_id]
+            neighbour_cell = self.grid[cell_id + self.direction2step[direction]]
 
-        if state == GridCellUpdate.CONTRADICTION:
-            self.start_over = True
-            return
-        
-        if cell_id - self.width >= 0 and direction != Direction.BOTTOM:
-            self.updates.append((Direction.TOP, 
-                                 cell_id + self.direction2step[Direction.TOP]))
+            for t in adjacent_tiles:
+                if not t in neighbour_cell.possible_tiles:
+                    continue
 
-        if cell_id + self.width < len(self.grid) and direction != Direction.TOP:
-            self.updates.append((Direction.BOTTOM, 
-                                 cell_id + self.direction2step[Direction.BOTTOM]))
-
-        if cell_id % self.width != 0 and direction != Direction.RIGHT:
-            self.updates.append((Direction.LEFT, 
-                                 cell_id + self.direction2step[Direction.LEFT]))
-
-        if (cell_id + 1) % self.width != 0 and direction != Direction.LEFT:
-            self.updates.append((Direction.RIGHT, 
-                                 cell_id + self.direction2step[Direction.RIGHT]))
-
-        
+                neighbour_cell.possible_tiles[t][direction] -= 1
+                if neighbour_cell.possible_tiles[t][direction] == 0:
+                    neighbour_cell.possible_tiles.pop(t)
+                    
+                    if not neighbour_cell.possible_tiles:
+                        self.start_over = True
+                        return
+                    
+                    self._update_entropy(neighbour_cell)
+                    
+                    self.updates.append((neighbour_cell.id, t))
 
     def _collapse(self, cell):
-        probs = np.array([cell.tiles[t].count for t in cell.possible_tiles])
+        probs = np.array([self.tiles[t].count for t in cell.possible_tiles])
         probs = probs/np.sum(probs)
 
-        idx = np.random.choice(np.arange(len(cell.possible_tiles)), size=1, p=probs)[0]
+        idx = np.random.choice(list(cell.possible_tiles.keys()), size=1, p=probs)[0]
 
-        cell.possible_tiles = [cell.possible_tiles[idx]]
+        for tile_id in cell.possible_tiles:
+            if tile_id != idx:
+                self.updates.append((cell.id, tile_id))
+
+        cell.possible_tiles = {idx: cell.possible_tiles[idx]}
         cell.entropy = np.inf
 
+    def _has_neighbour(self, cell_id, direction):
+
+        neighbour_idx = cell_id + self.direction2step[direction]
+
+        if direction == Direction.BOTTOM:
+            criterion = cell_id - self.width >= 0
+        elif direction == Direction.TOP:
+            criterion = cell_id + self.width < len(self.grid)
+        elif direction == Direction.RIGHT:
+            criterion = cell_id % self.width != 0
+        else:
+            criterion = (cell_id + 1) % self.width != 0
+
+        return criterion and not np.isinf(self.grid[neighbour_idx].entropy)
+
+    def _update_entropy(self, cell):
+        W = np.array([self.tiles[t].count for t in cell.possible_tiles])
+        W_sum = np.sum(W)
+
+        cell.entropy = np.log(W_sum) - np.sum(W * np.log(W))/W_sum + np.random.normal(0, 1/2)
+
     def _choose_cell(self):
-        min_entropy = min(self.grid, key=lambda x: x.entropy).entropy
-        if np.isinf(min_entropy):
+        chosen_cell = min(self.grid, key=lambda cell: cell.entropy)
+        if np.isinf(chosen_cell.entropy):
             return None
 
-        min_entropy_cells = [cell for cell in self.grid if cell.entropy == min_entropy]
-        return np.random.choice(min_entropy_cells, size=1)[0]
+        return chosen_cell
 
     def _prepare_image(self):
         im = np.zeros((self.height * self.pixel_size, self.width * self.pixel_size, 3), dtype=int)
-        tiles = self.grid[0].tiles
 
         for t in range(len(self.grid)):
             i = t // self.width
             j = t % self.width
 
-            sub_tile = tiles[self.grid[t].possible_tiles[0]].tile[:self.pixel_size, 
-                                                                  (self.window_size - 1)*self.pixel_size:, 
-                                                                  :]          
+            idx = list(self.grid[t].possible_tiles.keys())[0]
+            sub_tile = self.tiles[idx].tile[:self.pixel_size,
+                                            (self.window_size - 1)*self.pixel_size:,
+                                            :]
 
             im[i*self.pixel_size:(i+1)*self.pixel_size, 
                j*self.pixel_size:(j+1)*self.pixel_size, 

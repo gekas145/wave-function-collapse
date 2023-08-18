@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from wfc.utils import Tile, Direction
+import matplotlib.pyplot as plt
 
 class Preprocessor:
 
@@ -32,14 +33,13 @@ class Preprocessor:
                           i*self.pixel_size:i*self.pixel_size + self.window_size*self.pixel_size, 
                           :]
                 tiles += self._augment(tile)
-
         tiles, counts = np.unique(tiles, return_counts=True, axis=0)
         self.tiles = [Tile(tile, count, self.pixel_size) for tile, count in zip(tiles, counts)]
 
     
     def _preprocess_adjacency_rules(self):
         
-        self.adjacency_rules = {direction: [[] for i in range(len(self.tiles))] for direction in Direction}
+        self.adjacency_rules = [[[] for i in range(len(self.tiles))] for direction in Direction]
 
         for i in range(len(self.tiles)):
             for j in range(len(self.tiles)):
