@@ -17,6 +17,7 @@ class Preprocessor:
         im = cv2.imread(im_path)[:, :, ::-1]
 
         steps_w, steps_h = im.shape[1] // self.pixel_size, im.shape[0] // self.pixel_size
+        im = im[:steps_h*self.pixel_size, :steps_w*self.pixel_size, :]
 
         A = im[:, 0:(self.window_size - 1)*self.pixel_size, :]
         B = im[0:(self.window_size - 1)*self.pixel_size, :, :]

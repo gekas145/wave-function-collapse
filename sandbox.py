@@ -5,7 +5,7 @@ from wfc.preprocessor import Preprocessor
 from wfc.generator import Generator
 from wfc.utils import Direction, GridCell
 
-pixel_size = 20
+pixel_size = 10
 window_size = 3
 
 prep = Preprocessor(pixel_size, window_size)
