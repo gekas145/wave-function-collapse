@@ -6,60 +6,61 @@ import matplotlib.pyplot as plt
 
 class Generator:
 
-    def __init__(self, output_dim, pixel_size, window_size, tiles, adjacency_rules):
+    def __init__(self, output_dim, pixel_size, window_size, tiles, adjacency_rules, retry_num):
         self.width = output_dim[1]
         self.height = output_dim[0]
         self.pixel_size = pixel_size
         self.window_size = window_size
         self.tiles = tiles
         self.adjacency_rules = adjacency_rules
-        self.grid = [0] * (self.width*self.height)
+        self.retry_num = retry_num
+        self.grid = {}
 
-        possible_tiles = {i: [len(adjacency_rules[Direction.BOTTOM][i]),
-                              len(adjacency_rules[Direction.LEFT][i]),
-                              len(adjacency_rules[Direction.TOP][i]),
-                              len(adjacency_rules[Direction.RIGHT][i])]\
-                            for i in range(len(tiles))}
-
-        for i in range(self.width*self.height):
-            self.grid[i] = GridCell(copy.deepcopy(possible_tiles), i)
-            self._update_entropy(self.grid[i])
-
-        self.start_over = False
-        self.updates = deque()
         self.direction2step = {Direction.BOTTOM: -self.width,
                                Direction.TOP: self.width,
                                Direction.LEFT: 1,
                                Direction.RIGHT: -1}
 
+        self.possible_tiles = {i: [len(adjacency_rules[Direction.BOTTOM][i]),
+                               len(adjacency_rules[Direction.LEFT][i]),
+                               len(adjacency_rules[Direction.TOP][i]),
+                               len(adjacency_rules[Direction.RIGHT][i])]\
+                            for i in range(len(tiles))}
 
+        self.start_over = False
+        self.updates = deque()
+        self._reset()
 
     def generate(self):
-        count = 0
-        while True:
-            count += 1
-            print(f"{count}/{len(self.grid)}")
-            chosen_cell = self._choose_cell()
-            if chosen_cell is None:
+        for i in range(self.retry_num):
+            count = 0
+            while True:
+                count += 1
+                print(f"{count}/{len(self.grid)}")
+                chosen_cell = self._choose_cell()
+                if chosen_cell is None:
+                    break
+
+                self._collapse(chosen_cell)
+
+                while self.updates:
+                    update = self.updates.popleft()
+                    self._propagate(*update)
+
+                    if self.start_over:
+                        break
+                
+                if self.start_over:
+                        break
+        
+            if not self.start_over:
                 break
 
-            self._collapse(chosen_cell)
-
-            while self.updates:
-                update = self.updates.popleft()
-                self._propagate(*update)
-
-                if self.start_over:
-                    break
-            
-            if self.start_over:
-                    break
+            self._reset()
         
         if not self.start_over:
             return self._prepare_image()
         return None
-
-
 
     def _propagate(self, cell_id, tile_id):
         if self.start_over:
@@ -128,6 +129,16 @@ class Generator:
             return None
 
         return chosen_cell
+
+    def _reset(self):
+        self.grid = [0] * (self.width*self.height)
+
+        for i in range(self.width*self.height):
+            self.grid[i] = GridCell(copy.deepcopy(self.possible_tiles), i)
+            self._update_entropy(self.grid[i])
+
+        self.start_over = False
+        self.updates = deque()
 
     def _prepare_image(self):
         im = np.zeros((self.height * self.pixel_size, self.width * self.pixel_size, 3), dtype=int)
