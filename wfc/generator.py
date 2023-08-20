@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-from wfc.utils import GridCell, GridCellUpdate, Direction
+from wfc.utils import GridCell, Direction
 from collections import deque
 import matplotlib.pyplot as plt
 
@@ -26,6 +26,12 @@ class Generator:
                                len(adjacency_rules[Direction.TOP][i]),
                                len(adjacency_rules[Direction.RIGHT][i])]\
                             for i in range(len(tiles))}
+
+        W = np.array([t.count for t in self.tiles])
+        self.W_sum = np.sum(W)
+        self.log_sum = np.sum(W * np.log(W))
+
+        self.initial_entropy = np.log(self.W_sum) - self.log_sum/self.W_sum
 
         self.start_over = False
         self.updates = deque()
@@ -85,7 +91,7 @@ class Generator:
                         self.start_over = True
                         return
                     
-                    self._update_entropy(neighbour_cell)
+                    self._update_entropy(neighbour_cell, t)
                     
                     self.updates.append((neighbour_cell.id, t))
 
@@ -117,11 +123,12 @@ class Generator:
 
         return criterion and not np.isinf(self.grid[neighbour_idx].entropy)
 
-    def _update_entropy(self, cell):
-        W = np.array([self.tiles[t].count for t in cell.possible_tiles])
-        W_sum = np.sum(W)
+    def _update_entropy(self, cell, deleted_tile):
+        count = self.tiles[deleted_tile].count
+        cell.W_sum -= count
+        cell.log_sum -= count * np.log(count)
 
-        cell.entropy = np.log(W_sum) - np.sum(W * np.log(W))/W_sum + np.random.normal(0, 1/2)
+        cell.entropy = np.log(cell.W_sum) - cell.log_sum/cell.W_sum
 
     def _choose_cell(self):
         chosen_cell = min(self.grid, key=lambda cell: cell.entropy)
@@ -131,11 +138,11 @@ class Generator:
         return chosen_cell
 
     def _reset(self):
-        self.grid = [0] * (self.width*self.height)
-
-        for i in range(self.width*self.height):
-            self.grid[i] = GridCell(copy.deepcopy(self.possible_tiles), i)
-            self._update_entropy(self.grid[i])
+        self.grid = [GridCell(copy.deepcopy(self.possible_tiles), 
+                              i,
+                              self.initial_entropy + np.random.normal(0, 1/2), 
+                              self.W_sum, 
+                              self.log_sum) for i in range(self.width*self.height)]
 
         self.start_over = False
         self.updates = deque()

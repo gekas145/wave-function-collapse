@@ -9,13 +9,6 @@ class Direction(IntEnum):
     BOTTOM = 2
     LEFT = 3
 
-class GridCellUpdate(IntEnum):
-
-    CHANGED = 0
-    UNCHANGED = 1
-    CONTRADICTION = 2
-
-
 class Tile:
 
     def __init__(self, tile, count, pixel_size):
@@ -38,10 +31,12 @@ class Tile:
 
 class GridCell:
 
-    def __init__(self, possible_tiles, id):
+    def __init__(self, possible_tiles, id, initial_entropy, W_sum, log_sum):
         self.possible_tiles = possible_tiles
         self.id = id
-        self.entropy = 0
+        self.entropy = initial_entropy
+        self.W_sum = W_sum
+        self.log_sum = log_sum
 
 
 

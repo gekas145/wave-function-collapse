@@ -14,7 +14,7 @@ class Preprocessor:
 
     
     def _preprocess_tiles(self, im_path):
-        im = cv2.imread(im_path)[:, :, ::-1]
+        im = cv2.imread(im_path)
 
         steps_w, steps_h = im.shape[1] // self.pixel_size, im.shape[0] // self.pixel_size
         im = im[:steps_h*self.pixel_size, :steps_w*self.pixel_size, :]
