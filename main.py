@@ -5,12 +5,12 @@ from wfc.preprocessor import Preprocessor
 from wfc.generator import Generator
 from wfc.utils import Direction, GridCell
 
-pixel_size = 1
+pixel_size = 10
 window_size = 3
 
 prep = Preprocessor(pixel_size, window_size)
 
-prep._preprocess_tiles("images/Spirals.png")
+prep._preprocess_tiles("images/knot.png")
 prep._preprocess_adjacency_rules()
 print(len(prep.tiles))
 
@@ -38,14 +38,14 @@ print(len(prep.tiles))
 #     axarr[1].imshow(tile.tile[:tile_shape - pixel_size, :, :])
 #     plt.show()
 
-gen = Generator((100, 400), pixel_size, window_size, prep.tiles, prep.adjacency_rules, 5)
+gen = Generator((40, 150), pixel_size, window_size, prep.tiles, prep.adjacency_rules, 5)
 # # gen.generate()
 # # for g in gen.grid:
 #     # print(g.possible_tiles)
 im = gen.generate()
 
 if im is not None:
-    cv2.imwrite("generated_images/spirals.png", im)
+    cv2.imwrite("generated_images/knot.png", im)
 # for g in gen.grid:
 #     print(g.possible_tiles)
 
