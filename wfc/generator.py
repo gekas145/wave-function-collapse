@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-from wfc.utils import GridCell, Direction
+from wfc.utils import GridCell, Direction, print_progress_bar
 from collections import deque
 import matplotlib.pyplot as plt
 
@@ -39,10 +39,13 @@ class Generator:
 
     def generate(self):
         for i in range(self.retry_num):
+            print(f"Generating image: attempt {i+1}/{self.retry_num}")
+
             count = 0
             while True:
                 count += 1
-                print(f"{count}/{len(self.grid)}")
+                print_progress_bar(count, len(self.grid))
+
                 chosen_cell = self._choose_cell()
                 if chosen_cell is None:
                     break
@@ -57,7 +60,8 @@ class Generator:
                         break
                 
                 if self.start_over:
-                        break
+                    print(f"Attempt {i+1} failed")
+                    break
         
             if not self.start_over:
                 break
@@ -65,7 +69,10 @@ class Generator:
             self._reset()
         
         if not self.start_over:
+            print("Image generated successfully")
             return self._prepare_image()
+        
+        print("All attepts failed, please retry")
         return None
 
     def _propagate(self, cell_id, tile_id):
