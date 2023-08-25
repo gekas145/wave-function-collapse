@@ -7,45 +7,18 @@ from wfc.utils import Direction, GridCell
 
 pixel_size = 10
 window_size = 3
+output_shape = (40, 150)
+retry_num = 5
 
 prep = Preprocessor(pixel_size, window_size)
+prep.preprocess("images/knot.png")
+print(f"Tiles number: {len(prep.tiles)}")
 
-prep._preprocess_tiles("images/knot.png")
-prep._preprocess_adjacency_rules()
-print(len(prep.tiles))
-
-# for d in Direction:
-#     print(prep.adjacency_rules[d])
-#     print("=============")
-
-# d = Direction.RIGHT
-# t = 0
-# print(prep.adjacency_rules[d][t])
-
-# plt.imshow(prep.tiles[t].tile)
-# plt.title("Chosen")
-# plt.show()
-
-# for i in prep.adjacency_rules[d][t]:
-#     plt.imshow(prep.tiles[i].tile)
-#     plt.title(i)
-#     plt.show()
-
-# tile_shape = prep.tiles[t].tile.shape[0]
-# for tile in prep.tiles:
-#     f, axarr = plt.subplots(1,2)
-#     axarr[0].imshow(prep.tiles[t].tile[pixel_size:, :, :]) 
-#     axarr[1].imshow(tile.tile[:tile_shape - pixel_size, :, :])
-#     plt.show()
-
-gen = Generator((40, 150), pixel_size, window_size, prep.tiles, prep.adjacency_rules, 5)
-# # gen.generate()
-# # for g in gen.grid:
-#     # print(g.possible_tiles)
+gen = Generator(output_shape, pixel_size, window_size, prep.tiles, prep.adjacency_rules, retry_num)
 im = gen.generate()
 
 if im is not None:
     cv2.imwrite("generated_images/knot.png", im)
-# for g in gen.grid:
-#     print(g.possible_tiles)
+
+print("Image saved")
 

@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 from enum import IntEnum
 
@@ -16,7 +15,10 @@ class Tile:
         self.tile = tile
         self.count = count
         self.pixel_size = pixel_size
-
+    
+    # checks compatibility in top and right directions
+    # compatibility in other directions can be obtained by 
+    # calling this method on other with self as argument
     def is_compatible(self, other, direction):
         tile_shape = self.tile.shape[0]
 
@@ -29,19 +31,21 @@ class Tile:
                               other.tile[:, self.pixel_size:, :])
 
 
-
+# stores all info about grid cell from output image grif in Generator
 class GridCell:
 
     def __init__(self, possible_tiles, id, initial_entropy, W_sum, log_sum):
+        # dict of form tiled_id: list of enablers number in each possible direction
         self.possible_tiles = possible_tiles
         self.id = id
         self.entropy = initial_entropy
+        # cached values for efficient entropy updates
         self.W_sum = W_sum
         self.log_sum = log_sum
 
 # this code was taken from
 # https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console?page=1&tab=votes#tab-top
-def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
+def print_progress_bar(iteration, total, decimals=0, length=10, fill='█'):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -56,8 +60,6 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
-    sys.stdout.write(f'\r{prefix} |{bar}| {percent}% {suffix}')
-    # Print New Line on Complete
-    if iteration == total:
-        print()
+    end = "\r" if iteration != total else "\n"
+    print(f'|{bar}| {percent}%', end=end)
 
