@@ -8,9 +8,10 @@ class Preprocessor:
     Class which generates tiles list and their adjacency rules from input image for WFC algorithm
     '''
 
-    def __init__(self, pixel_size, window_size):
+    def __init__(self, pixel_size, window_size, max_count=100):
         self.pixel_size = pixel_size
         self.window_size = window_size
+        self.max_count = max_count
 
         self.tiles = []
         self.adjacency_rules = []
@@ -45,7 +46,7 @@ class Preprocessor:
                 tiles += self._augment(tile)
 
         tiles, counts = np.unique(tiles, return_counts=True, axis=0)
-        self.tiles = [Tile(tile, count, self.pixel_size) for tile, count in zip(tiles, counts)]
+        self.tiles = [Tile(tile, min(count, self.max_count), self.pixel_size) for tile, count in zip(tiles, counts)]
 
     # generates adjacency rules in form that
     # adjacency_rules[direction[tile_id]] - is a list of all tiles ids which are compatible
