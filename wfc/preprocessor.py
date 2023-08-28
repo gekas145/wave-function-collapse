@@ -8,7 +8,7 @@ class Preprocessor:
     Class which generates tiles list and their adjacency rules from input image for WFC algorithm
     '''
 
-    def __init__(self, pixel_size, window_size, max_count=100):
+    def __init__(self, pixel_size, window_size, max_count=np.inf):
         self.pixel_size = pixel_size
         self.window_size = window_size
         self.max_count = max_count
