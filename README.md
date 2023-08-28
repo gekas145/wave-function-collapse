@@ -4,4 +4,5 @@ Wave function collapse is a texture synthesis algorithm. This repo contains a Py
 References:
 
 [1] gridbugs, Procedural Generation with Wave Function Collapse, [https://www.gridbugs.org/wave-function-collapse/](https://www.gridbugs.org/wave-function-collapse/) .
+
 [2] mxgmn, [https://github.com/mxgmn/WaveFunctionCollapse](https://github.com/mxgmn/WaveFunctionCollapse) .
