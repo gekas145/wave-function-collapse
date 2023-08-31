@@ -5,13 +5,13 @@ from wfc.preprocessor import Preprocessor
 from wfc.generator import Generator
 from wfc.utils import Direction, GridCell
 
-pixel_size = 10
+pixel_size = 8
 window_size = 3
-output_shape = (40, 160)
+output_shape = (80, 80)
 retry_num = 5
-max_count = 13
-input_im_path = "images/spirals.png"
-output_im_path = "generated_images/spirals.png"
+max_count = 250
+input_im_path = "images/flowers.png"
+output_im_path = "generated_images/flowers.png"
 
 prep = Preprocessor(pixel_size, window_size, max_count=max_count)
 prep.preprocess(input_im_path)

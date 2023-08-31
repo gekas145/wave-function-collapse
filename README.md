@@ -1,5 +1,5 @@
 # wave-function-collapse
-Wave function collapse is a texture synthesis algorithm. This repo contains a Python implementation of it which generates new images based on provided input image. For best experience use relatively small images(e.g. 100x100) which can be wrapped around itself without breaking the pattern and tweack hyperparameters from `main.py`.
+Wave function collapse is a texture synthesis algorithm. This repo contains a Python implementation of it which generates new images based on provided input image. For best experience use relatively small images(e.g. 100x100) which can be wrapped around itself without breaking the pattern and tweak hyperparameters from `main.py`.
 
 References:
 
